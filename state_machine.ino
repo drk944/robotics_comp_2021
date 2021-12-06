@@ -6,7 +6,6 @@ State machine for controlling arduino MEGA 2560 for ECEN BYU Robotics Competitio
 #include <math.h>
 
 // Pinout definitions:
-<<<<<<< HEAD
 #define SERVO1_PIN 22
 #define SERVO2_PIN 24
 #define SERVO3_PIN 26
@@ -25,26 +24,6 @@ State machine for controlling arduino MEGA 2560 for ECEN BYU Robotics Competitio
 #define BTN4 36
 
 #define BTN_START 38
-=======
-#define SERVO1_PIN 3
-#define SERVO2_PIN 4
-#define SERVO3_PIN 5
-#define SERVO4_PIN 6
-
-#define LASERS 7
-
-#define sensor1 A0
-#define sensor2 A1
-#define sensor3 A2
-#define sensor4 A3
-
-#define BTN1 8
-#define BTN2 9
-#define BTN3 10
-#define BTN4 11
-
-#define BTN_START 12
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
 
 // Value definitions
 #define SERVO_DELAY 500 // how long to make movement
@@ -95,12 +74,8 @@ enum state{
     c3_debounce_st,
     c4_st,
     c4_debounce_st,
-<<<<<<< HEAD
     cancel_debounce_st,
     exit_st
-=======
-    cancel_debounce_st
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
 };
 // Servo direction code
 enum dir{
@@ -136,11 +111,8 @@ void setup() {
     pinMode(BTN4, INPUT);
     pinMode(BTN_START, INPUT);
 
-<<<<<<< HEAD
     Serial.begin(9600);
 
-=======
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
 }
 
 // Calculate the average and std-dev of sensor readings from vector
@@ -223,12 +195,9 @@ void print_states() {
                 case cancel_debounce_st:
                     Serial.println("Cancel_Debounce_ST");
                 break;
-<<<<<<< HEAD
 
                 case exit_st:
                   Serial.println("Exit_State, let go of the buttons");
-=======
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
             }
         }
 }
@@ -242,11 +211,8 @@ void tick() {
         break;
 
         case pre_game_st:
-<<<<<<< HEAD
+
             if (digitalRead(BTN_START) == HIGH) {
-=======
-            if (BTN_START == HIGH) {
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
                 current_state = pre_game_debounce_st;
             } else {
                 current_state = current_state;
@@ -255,12 +221,7 @@ void tick() {
         break;
     
         case pre_game_debounce_st:
-<<<<<<< HEAD
             if(digitalRead(BTN_START) == HIGH) {
-              
-=======
-            if(BTN_START == HIGH) {
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
                 if (debounce_timer >= DEBOUNCE_MIN_TIME) {
                     pinMode(LASERS, LOW);
                     current_state = wait_st;
@@ -269,10 +230,7 @@ void tick() {
                 }
             } else {
                 current_state = pre_game_st;
-<<<<<<< HEAD
                 debounce_timer = 0;
-=======
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
             }
         break;
         
@@ -286,7 +244,6 @@ void tick() {
                 current_state = c3_st;
             } else if (sensor4_reading >= (sensor_avg[3]+sensor_stddev[3]*SENSOR_STDDEVS)) {
                 current_state = c4_st;
-<<<<<<< HEAD
             } else if (digitalRead(BTN_START) == HIGH && digitalRead(BTN4) == HIGH) {
                 current_state = cancel_debounce_st;
             } else if (digitalRead(BTN1) == HIGH) {
@@ -298,29 +255,11 @@ void tick() {
             } else if (digitalRead(BTN4) == HIGH) {
                 current_state = c4_debounce_st;
             }
-            
-=======
-            } else if (BTN1 == HIGH) {
-                current_state = c1_debounce_st;
-            } else if (BTN2 == HIGH) {
-                current_state = c2_debounce_st;
-            } else if (BTN3 == HIGH) {
-                current_state = c3_debounce_st;
-            } else if (BTN4 == HIGH) {
-                current_state = c4_debounce_st;
-            } else if (BTN_START == HIGH) {
-                current_state = cancel_debounce_st;
-            }
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
 
         break;
         
         case c1_debounce_st:
-<<<<<<< HEAD
             if (digitalRead(BTN1)== HIGH) {
-=======
-            if (BTN1 == HIGH) {
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
                 if (debounce_timer >= DEBOUNCE_MIN_TIME) {
                     current_state = c1_st;
                     debounce_timer = 0;
@@ -336,15 +275,9 @@ void tick() {
         break;
         
         case c2_debounce_st:
-<<<<<<< HEAD
             if (digitalRead(BTN2) == HIGH) {
                 if (debounce_timer >= DEBOUNCE_MIN_TIME) {
                     current_state = c2_st;
-=======
-            if (BTN1 == HIGH) {
-                if (debounce_timer >= DEBOUNCE_MIN_TIME) {
-                    current_state = c1_st;
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
                     debounce_timer = 0;
                 }
             } else {
@@ -358,15 +291,9 @@ void tick() {
         break;
         
         case c3_debounce_st:
-<<<<<<< HEAD
             if (digitalRead(BTN3) == HIGH) {
                 if (debounce_timer >= DEBOUNCE_MIN_TIME) {
                     current_state = c3_st;
-=======
-            if (BTN1 == HIGH) {
-                if (debounce_timer >= DEBOUNCE_MIN_TIME) {
-                    current_state = c1_st;
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
                     debounce_timer = 0;
                 }
             } else {
@@ -380,15 +307,9 @@ void tick() {
         break;
         
         case c4_debounce_st:
-<<<<<<< HEAD
             if (digitalRead(BTN4) == HIGH) {
                 if (debounce_timer >= DEBOUNCE_MIN_TIME) {
                     current_state = c4_st;
-=======
-            if (BTN1 == HIGH) {
-                if (debounce_timer >= DEBOUNCE_MIN_TIME) {
-                    current_state = c1_st;
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
                     debounce_timer = 0;
                 }
             } else {
@@ -402,7 +323,6 @@ void tick() {
         break;
 
         case cancel_debounce_st:
-<<<<<<< HEAD
             if (digitalRead(BTN_START) == HIGH && digitalRead(BTN4) == HIGH) {
                 if (debounce_timer >= DEBOUNCE_MIN_TIME) {
                     current_state = exit_st;
@@ -416,9 +336,6 @@ void tick() {
 
         case exit_st:
             if (digitalRead(BTN_START) == LOW && digitalRead(BTN4) == LOW) {
-=======
-            if (BTN_START == HIGH) {
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
                 if (debounce_timer >= DEBOUNCE_MIN_TIME) {
                     current_state = pre_game_st;
                     debounce_timer = 0;
@@ -428,11 +345,7 @@ void tick() {
                     sensor4_running_avg.clear();
                 }
             } else {
-<<<<<<< HEAD
                 current_state = exit_st;
-=======
-                current_state = wait_st;
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
                 debounce_timer = 0;
             }
         break;
@@ -534,16 +447,12 @@ void tick() {
         case cancel_debounce_st:
             debounce_timer++;
         break;
-<<<<<<< HEAD
         case exit_st:
             debounce_timer++;
         break;
     }
     print_states();
     prev_state = current_state;
-=======
-    }
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
 }
 
 void loop() {
@@ -554,7 +463,3 @@ void loop() {
     sensor4_reading = analogRead(sensor4);
     tick();
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> 0461f40e1c289ecc96e17820929c83f4e6d09a53
