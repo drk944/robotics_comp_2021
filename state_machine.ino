@@ -26,17 +26,17 @@ State machine for controlling arduino MEGA 2560 for ECEN BYU Robotics Competitio
 #define BTN_START 38
 
 // Value definitions
-#define SERVO_DELAY 500 // how long to make movement
+#define SERVO_DELAY 250 // how long to make movement
 #define FIRE_DELAY 0 // bad coding practice, but how long to tell robot to wait before firing again
 // Min and Max values to write to servo motors, may need to be tweaked individually.
-#define SERVO1_MAX 175
-#define SERVO1_MIN 5
-#define SERVO2_MAX 175
-#define SERVO2_MIN 5
-#define SERVO3_MAX 175
-#define SERVO3_MIN 5
-#define SERVO4_MAX 175
-#define SERVO4_MIN 5
+#define SERVO1_MAX 90
+#define SERVO1_MIN 0
+#define SERVO2_MAX 90
+#define SERVO2_MIN 0
+#define SERVO3_MAX 90
+#define SERVO3_MIN 0
+#define SERVO4_MAX 90
+#define SERVO4_MIN 0
 
 // Debouncing
 int debounce_timer = 0;
@@ -378,8 +378,10 @@ void tick() {
         break;
 
         case c1_st:
-            if(s1_dir == fwd) {
+            if(true) { // s1_dir == fwd) {
                 servo1.write(SERVO1_MAX);
+                delay(SERVO_DELAY);
+                servo1.write(SERVO1_MIN);
                 delay(SERVO_DELAY);
                 s1_dir = bwd;
             } else {
@@ -396,8 +398,10 @@ void tick() {
         break;
         
         case c2_st:
-            if(s2_dir == fwd) {
+            if(true) { //s2_dir == fwd) {
                 servo2.write(SERVO2_MAX);
+                delay(SERVO_DELAY);
+                servo2.write(SERVO2_MIN);
                 delay(SERVO_DELAY);
                 s2_dir = bwd;
             } else {
@@ -414,8 +418,10 @@ void tick() {
         break;
 
         case c3_st:
-            if(s3_dir == fwd) {
+            if(true) { //s3_dir == fwd) {
                 servo3.write(SERVO3_MAX);
+                delay(SERVO_DELAY);
+                servo3.write(SERVO3_MIN);
                 delay(SERVO_DELAY);
                 s3_dir = bwd;
             } else {
@@ -432,8 +438,10 @@ void tick() {
         break;
 
         case c4_st:
-            if(s4_dir == fwd) {
+            if(true) { // s4_dir == fwd) {
                 servo4.write(SERVO4_MAX);
+                delay(SERVO_DELAY);
+                servo4.write(SERVO4_MIN);
                 delay(SERVO_DELAY);
                 s4_dir = bwd;
             } else {
