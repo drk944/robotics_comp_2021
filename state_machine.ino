@@ -13,9 +13,9 @@ State machine for controlling arduino MEGA 2560 for ECEN BYU Robotics Competitio
 
 #define LASERS 7
 
-#define sensor1 A4
-#define sensor2 A5
-#define sensor3 A6
+#define sensor1 A5
+#define sensor2 A6
+#define sensor3 A4
 #define sensor4 A7
 
 #define BTN1 30
@@ -27,14 +27,14 @@ State machine for controlling arduino MEGA 2560 for ECEN BYU Robotics Competitio
 
 // Value definitions
 #define SERVO_DELAY 250 // how long to make movement
-#define FIRE_DELAY 0 // bad coding practice, but how long to tell robot to wait before firing again
+#define FIRE_DELAY 75 // bad coding practice, but how long to tell robot to wait before firing again
 // Min and Max values to write to servo motors, may need to be tweaked individually.
 #define SERVO1_MAX 90
 #define SERVO1_MIN 0
 #define SERVO2_MAX 90
 #define SERVO2_MIN 0
 #define SERVO3_MAX 90
-#define SERVO3_MIN 0
+#define SERVO3_MIN 5
 #define SERVO4_MAX 90
 #define SERVO4_MIN 0
 
@@ -44,6 +44,7 @@ int debounce_timer = 0;
 
 // Sensor values
 #define SENSOR_STDDEVS 3 // calculate if value is greater than 3 std-devs from means.
+#define CONVERSION 5/1024
 Vector<float> sensor1_running_avg;
 Vector<float> sensor2_running_avg;
 Vector<float> sensor3_running_avg;
@@ -236,13 +237,30 @@ void tick() {
         
         case wait_st:
             // Insert sensor value checks here first
-            if (sensor1_reading >= (sensor_avg[0]+sensor_stddev[0]*SENSOR_STDDEVS)) {
+            // if (sensor1_reading >= (sensor_avg[0]+sensor_stddev[0]*SENSOR_STDDEVS)) {
+            //     current_state = c1_st;
+            // } else if (sensor2_reading >= (sensor_avg[1]+sensor_stddev[1]*SENSOR_STDDEVS)) {
+            //     current_state = c2_st;
+            // } else if (sensor3_reading >= (sensor_avg[2]+sensor_stddev[2]*SENSOR_STDDEVS)) {
+            //     current_state = c3_st;
+            // } else if (sensor4_reading >= (sensor_avg[3]+sensor_stddev[3]*SENSOR_STDDEVS)) {
+            //     current_state = c4_st;
+            Serial.print(sensor1_reading);
+            Serial.print(" ");
+            Serial.print(sensor2_reading);
+            Serial.print(" ");
+            Serial.print(sensor3_reading);
+            Serial.print(" ");
+            Serial.print(sensor4_reading);
+            Serial.println(" ");
+            
+            if (sensor1_reading >= (1.5)) {
                 current_state = c1_st;
-            } else if (sensor2_reading >= (sensor_avg[1]+sensor_stddev[1]*SENSOR_STDDEVS)) {
+            } else if (sensor2_reading >= (1.5)) {
                 current_state = c2_st;
-            } else if (sensor3_reading >= (sensor_avg[2]+sensor_stddev[2]*SENSOR_STDDEVS)) {
+            } else if (sensor3_reading >= (1.5)) {
                 current_state = c3_st;
-            } else if (sensor4_reading >= (sensor_avg[3]+sensor_stddev[3]*SENSOR_STDDEVS)) {
+            } else if (sensor4_reading >= (1.5)) {
                 current_state = c4_st;
             } else if (digitalRead(BTN_START) == HIGH && digitalRead(BTN4) == HIGH) {
                 current_state = cancel_debounce_st;
@@ -465,9 +483,9 @@ void tick() {
 
 void loop() {
     // can implement 3 value average here if needed, will need to change initialization in Pre-game
-    sensor1_reading = analogRead(sensor1);
-    sensor2_reading = analogRead(sensor2);
-    sensor3_reading = analogRead(sensor3);
-    sensor4_reading = analogRead(sensor4);
+    sensor1_reading = float(analogRead(sensor1))*CONVERSION;
+    sensor2_reading = float(analogRead(sensor2))*CONVERSION;
+    sensor3_reading = float(analogRead(sensor3))*CONVERSION;
+    sensor4_reading = float(analogRead(sensor4))*CONVERSION;
     tick();
 }
