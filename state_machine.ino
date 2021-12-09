@@ -27,13 +27,16 @@ State machine for controlling arduino MEGA 2560 for ECEN BYU Robotics Competitio
 
 // Value definitions
 #define SERVO_DELAY 250 // how long to make movement
-#define FIRE_DELAY 75 // bad coding practice, but how long to tell robot to wait before firing again
+#define FIRE_DELAY 0 // 75 // bad coding practice, but how long to tell robot to wait before firing again
+int prev_corner = 0;
+#define REPEAT_SHOT_DELAY 100
+
 // Min and Max values to write to servo motors, may need to be tweaked individually.
 #define SERVO1_MAX 90
 #define SERVO1_MIN 0
 #define SERVO2_MAX 90
 #define SERVO2_MIN 0
-#define SERVO3_MAX 90
+#define SERVO3_MAX 110
 #define SERVO3_MIN 5
 #define SERVO4_MAX 90
 #define SERVO4_MIN 0
@@ -119,6 +122,8 @@ void setup() {
 // Calculate the average and std-dev of sensor readings from vector
 void calculate_sensor_stats() {
     int N = sensor1_running_avg.size();
+    Serial.print("-----Sensor 1 avg size = ");
+    Serial.println(N);
     // First we'll sum up all the values in the array (wishing this was pythong)
     for (int i = 0; i < N; i++) {
         sensor_avg[0] += sensor1_running_avg[i];
@@ -236,32 +241,77 @@ void tick() {
         break;
         
         case wait_st:
-            // Insert sensor value checks here first
+            // Serial.print(sensor1_reading);
+            // Serial.print(" ");
+            // Serial.print(sensor2_reading);
+            // Serial.print(" ");
+            // Serial.print(sensor3_reading);
+            // Serial.print(" ");
+            // Serial.print(sensor4_reading);
+            // Serial.println(" "); // Averages v");
+
+        
+            // Serial.print(sensor_avg[0]+sensor_stddev[0]*SENSOR_STDDEVS);
+            // Serial.print(" ");
+            // Serial.print(sensor_avg[1]+sensor_stddev[1]*SENSOR_STDDEVS);
+            // Serial.print(" ");
+            // Serial.print(sensor_avg[2]+sensor_stddev[2]*SENSOR_STDDEVS);
+            // Serial.print(" ");
+            // Serial.print(sensor_avg[3]+sensor_stddev[3]*SENSOR_STDDEVS);
+            // Serial.println("  Readings v");
+            
+            // Using std_dev to calculate values
             // if (sensor1_reading >= (sensor_avg[0]+sensor_stddev[0]*SENSOR_STDDEVS)) {
+            //     if (prev_corner == 1) {
+            //         delay(REPEAT_SHOT_DELAY);
+            //     }
+            //     prev_corner = 1;
             //     current_state = c1_st;
             // } else if (sensor2_reading >= (sensor_avg[1]+sensor_stddev[1]*SENSOR_STDDEVS)) {
+            //     if (prev_corner == 2) {
+            //         delay(REPEAT_SHOT_DELAY);
+            //     }
+            //     prev_corner = 2;
             //     current_state = c2_st;
             // } else if (sensor3_reading >= (sensor_avg[2]+sensor_stddev[2]*SENSOR_STDDEVS)) {
+            //     if (prev_corner == 3) {
+            //         delay(REPEAT_SHOT_DELAY);
+            //     }
+            //     prev_corner = 3;
             //     current_state = c3_st;
             // } else if (sensor4_reading >= (sensor_avg[3]+sensor_stddev[3]*SENSOR_STDDEVS)) {
+            //     if (prev_corner == 4) {
+            //         delay(REPEAT_SHOT_DELAY);
+            //     }
+            //     prev_corner = 4;
             //     current_state = c4_st;
-            Serial.print(sensor1_reading);
-            Serial.print(" ");
-            Serial.print(sensor2_reading);
-            Serial.print(" ");
-            Serial.print(sensor3_reading);
-            Serial.print(" ");
-            Serial.print(sensor4_reading);
-            Serial.println(" ");
             
+            // Hard coded values
             if (sensor1_reading >= (1.5)) {
+                if (prev_corner == 1) {
+                    delay(REPEAT_SHOT_DELAY);
+                }
+                prev_corner = 1;
                 current_state = c1_st;
             } else if (sensor2_reading >= (1.5)) {
+                if (prev_corner == 2) {
+                    delay(REPEAT_SHOT_DELAY);
+                }
+                prev_corner = 2;
                 current_state = c2_st;
             } else if (sensor3_reading >= (1.5)) {
+                if (prev_corner == 3) {
+                    delay(REPEAT_SHOT_DELAY);
+                }
+                prev_corner = 3;
                 current_state = c3_st;
             } else if (sensor4_reading >= (1.5)) {
+                if (prev_corner == 4) {
+                    delay(REPEAT_SHOT_DELAY);
+                }
+                prev_corner = 4;
                 current_state = c4_st;
+
             } else if (digitalRead(BTN_START) == HIGH && digitalRead(BTN4) == HIGH) {
                 current_state = cancel_debounce_st;
             } else if (digitalRead(BTN1) == HIGH) {
