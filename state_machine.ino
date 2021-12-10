@@ -241,7 +241,7 @@ void tick() {
         break;
 
         case pre_game_st:
-            if (digitalRead(BTN4) == HIGH) {
+            if ((digitalRead(BTN4) == HIGH) and digitalRead(BTN_START) == HIGH) {
                 current_state = pre_game_debounce_st;
                 safety = true;
             }
@@ -343,10 +343,11 @@ void tick() {
                     }
                     prev_corner = 4;
                     current_state = c4_st;
-            }
+                }
             // leave below alone
-            } else if (digitalRead(BTN_START) == HIGH && digitalRead(BTN4) == HIGH) {
+            } if (digitalRead(BTN_START) == HIGH && digitalRead(BTN4) == HIGH) {
                 current_state = cancel_debounce_st;
+                safety = false;
             } else if (digitalRead(BTN1) == HIGH) {
                 current_state = c1_debounce_st;
             } else if (digitalRead(BTN2) == HIGH) {
