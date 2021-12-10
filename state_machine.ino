@@ -33,9 +33,10 @@ State machine for controlling arduino MEGA 2560 for ECEN BYU Robotics Competitio
 
 // Value definitions
 #define SERVO_DELAY 200 // how long to make movement
-#define FIRE_DELAY 0 // 150 // bad coding practice, but how long to tell robot to wait before firing again
+#define FIRE_DELAY 80 // 150 // bad coding practice, but how long to tell robot to wait before firing again
 int prev_corner = 0;
-#define REPEAT_SHOT_DELAY 100
+int prev_prev_corner = 0;
+#define REPEAT_SHOT_DELAY 200
 
 // Min and Max values to write to servo motors, may need to be tweaked individually.
 #define SERVO1_MAX 90
@@ -46,6 +47,7 @@ int prev_corner = 0;
 #define SERVO3_MIN 5
 #define SERVO4_MAX 90
 #define SERVO4_MIN 0
+#define SERVO_PRIME 30
 
 // Debouncing
 int debounce_timer = 0;
@@ -120,10 +122,10 @@ void setup() {
     servo3.attach(SERVO3_PIN);
     servo4.attach(SERVO4_PIN);
     // Initialie motors to position 0
-    servo1.write(SERVO1_MIN);
-    servo2.write(SERVO2_MIN);
-    servo3.write(SERVO3_MIN);
-    servo4.write(SERVO4_MIN);
+    servo1.write(SERVO_PRIME);
+    servo2.write(SERVO_PRIME);
+    servo3.write(SERVO_PRIME);
+    servo4.write(SERVO_PRIME);
 
     pinMode(LASER1, OUTPUT);
     pinMode(LASER2, OUTPUT);
@@ -137,39 +139,6 @@ void setup() {
 
     Serial.begin(9600);
 
-}
-
-// Calculate the average and std-dev of sensor readings from vector
-void calculate_sensor_stats() {
-    // int N = sensor1_running_avg.size();
-    int N = STARTING_ARRAY_SIZE;
-    // Serial.println(N);
-    // First we'll sum up all the values in the array (wishing this was pythong)
-    for (int i = 0; i < N; i++) {
-        sensor_avg[0] += sensor1_running_avg[i];
-        sensor_avg[1] += sensor2_running_avg[i];
-        sensor_avg[2] += sensor3_running_avg[i];
-        sensor_avg[3] += sensor4_running_avg[i];
-    }
-    // find the average of the values
-    sensor_avg[0] = sensor_avg[0]/N;
-    sensor_avg[1] = sensor_avg[1]/N;
-    sensor_avg[2] = sensor_avg[2]/N;
-    sensor_avg[3] = sensor_avg[3]/N;
-    
-    // finding std-dev
-    for (int i = 0; i < N; i++) {
-        // Serial.print(sensor1_running_avg[i]*1); Serial.print(" - "); Serial.println(sensor_avg[0]*1);
-        sensor_stddev[0] += pow((sensor1_running_avg[i] - sensor_avg[0]), 2);
-        sensor_stddev[1] += pow((sensor2_running_avg[i]*10 - sensor_avg[1]*10), 2);
-        sensor_stddev[2] += pow((sensor3_running_avg[i]*10 - sensor_avg[2]*10), 2);
-        sensor_stddev[3] += pow((sensor4_running_avg[i]*10 - sensor_avg[3]*10), 2);
-    }
-    // Serial.print("----- sensor_std_dev[0] = "); Serial.println(sensor_stddev[0]);
-    sensor_stddev[0] = sqrt(sensor_stddev[0]/(N-1));
-    sensor_stddev[1] = sqrt(sensor_stddev[1]/(N-1));
-    sensor_stddev[2] = sqrt(sensor_stddev[2]/(N-1));
-    sensor_stddev[3] = sqrt(sensor_stddev[3]/(N-1));
 }
 
 // Insert state transition logger:
@@ -290,58 +259,14 @@ void tick() {
         break;
         
         case wait_st:
-            // Serial.print(sensor1_reading);
-            // Serial.print(" ");
-            // Serial.print(sensor2_reading);
-            // Serial.print(" ");
-            // Serial.print(sensor3_reading);
-            // Serial.print(" ");
-            // Serial.print(sensor4_reading);
-            // Serial.println(" "); // Averages v");
 
-            // Serial.println(sensor_stddev[0]);
-            // Serial.print(" ");
-            // Serial.print(sensor_avg[0]+sensor_stddev[0]*SENSOR_STDDEVS);
-            // Serial.print(" ");
-            // Serial.print(sensor_avg[1]+sensor_stddev[1]*SENSOR_STDDEVS);
-            // Serial.print(" ");
-            // Serial.print(sensor_avg[2]+sensor_stddev[2]*SENSOR_STDDEVS);
-            // Serial.print(" ");
-            // Serial.print(sensor_avg[3]+sensor_stddev[3]*SENSOR_STDDEVS);
-            // Serial.println("  Readings v");
-            
-            // Using std_dev to calculate values
-            // if (sensor1_reading >= (sensor_avg[0]+sensor_stddev[0]*SENSOR_STDDEVS)) {
-            //     if (prev_corner == 1) {
-            //         delay(REPEAT_SHOT_DELAY);
-            //     }
-            //     prev_corner = 1;
-            //     current_state = c1_st;
-            // } else if (sensor2_reading >= (sensor_avg[1]+sensor_stddev[1]*SENSOR_STDDEVS)) {
-            //     if (prev_corner == 2) {
-            //         delay(REPEAT_SHOT_DELAY);
-            //     }
-            //     prev_corner = 2;
-            //     current_state = c2_st;
-            // } else if (sensor3_reading >= (sensor_avg[2]+sensor_stddev[2]*SENSOR_STDDEVS)) {
-            //     if (prev_corner == 3) {
-            //         delay(REPEAT_SHOT_DELAY);
-            //     }
-            //     prev_corner = 3;
-            //     current_state = c3_st;
-            // } else if (sensor4_reading >= (sensor_avg[3]+sensor_stddev[3]*SENSOR_STDDEVS)) {
-            //     if (prev_corner == 4) {
-            //         delay(REPEAT_SHOT_DELAY);
-            //     }
-            //     prev_corner = 4;
-            //     current_state = c4_st;
-            
             // Hard coded values
             if (safety == false) {
                 if (sensor1_reading >= (OP_AMP_THRESHOLD)) {
                     if (prev_corner == 1) {
                         delay(REPEAT_SHOT_DELAY);
                     }
+                    prev_prev_corner = prev_corner;
                     prev_corner = 1;
                     current_state = c1_st;
                 } else if (sensor2_reading >= (OP_AMP_THRESHOLD)) {
@@ -512,17 +437,11 @@ void tick() {
         break;
 
         case c1_st:
-            if(true) { // s1_dir == fwd) {
-                servo1.write(SERVO1_MAX);
-                delay(SERVO_DELAY);
-                servo1.write(SERVO1_MIN);
-                delay(SERVO_DELAY);
-                s1_dir = bwd;
-            } else {
-                servo1.write(SERVO1_MIN);
-                delay(SERVO_DELAY);
-                s1_dir = fwd;
-            }
+            servo1.write(SERVO1_MAX);
+            delay(SERVO_DELAY);
+            servo1.write(SERVO1_MIN);
+            //delay(SERVO_DELAY);
+            
             delay(FIRE_DELAY);
         
         break;
@@ -532,17 +451,11 @@ void tick() {
         break;
         
         case c2_st:
-            if(true) { //s2_dir == fwd) {
-                servo2.write(SERVO2_MAX);
-                delay(SERVO_DELAY);
-                servo2.write(SERVO2_MIN);
-                delay(SERVO_DELAY);
-                s2_dir = bwd;
-            } else {
-                servo2.write(SERVO2_MIN);
-                delay(SERVO_DELAY);
-                s2_dir = fwd;
-            }
+            servo2.write(SERVO2_MAX);
+            delay(SERVO_DELAY);
+            servo2.write(SERVO2_MIN);
+            // delay(SERVO_DELAY);
+            
             delay(FIRE_DELAY);
         
         break;
@@ -552,17 +465,11 @@ void tick() {
         break;
 
         case c3_st:
-            if(true) { //s3_dir == fwd) {
-                servo3.write(SERVO3_MAX);
-                delay(SERVO_DELAY);
-                servo3.write(SERVO3_MIN);
-                delay(SERVO_DELAY);
-                s3_dir = bwd;
-            } else {
-                servo3.write(SERVO3_MIN);
-                delay(SERVO_DELAY);
-                s3_dir = fwd;
-            }
+            servo3.write(SERVO3_MAX);
+            delay(SERVO_DELAY);
+            servo3.write(SERVO3_MIN);
+            // delay(SERVO_DELAY);
+            
             delay(FIRE_DELAY);
         
         break;
@@ -572,17 +479,11 @@ void tick() {
         break;
 
         case c4_st:
-            if(true) { // s4_dir == fwd) {
-                servo4.write(SERVO4_MAX);
-                delay(SERVO_DELAY);
-                servo4.write(SERVO4_MIN);
-                delay(SERVO_DELAY);
-                s4_dir = bwd;
-            } else {
-                servo4.write(SERVO4_MIN);
-                delay(SERVO_DELAY);
-                s4_dir = fwd;
-            }
+            servo4.write(SERVO4_MAX);
+            delay(SERVO_DELAY);
+            servo4.write(SERVO4_MIN);
+            // delay(SERVO_DELAY);
+            
             delay(FIRE_DELAY);
         break;
 
