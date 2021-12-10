@@ -5,13 +5,19 @@ State machine for controlling arduino MEGA 2560 for ECEN BYU Robotics Competitio
 #include <Servo.h>
 #include <math.h>
 
+#define OP_AMP_THRESHOLD 1.5
+
 // Pinout definitions:
 #define SERVO1_PIN 22
 #define SERVO2_PIN 24
 #define SERVO3_PIN 26
 #define SERVO4_PIN 28
 
-#define LASERS 7
+// 40, 42, 44, 46
+#define LASER1 40
+#define LASER2 42
+#define LASER3 44
+#define LASER4 46
 
 #define sensor1 A5
 #define sensor2 A6
@@ -27,9 +33,9 @@ State machine for controlling arduino MEGA 2560 for ECEN BYU Robotics Competitio
 
 // Value definitions
 #define SERVO_DELAY 250 // how long to make movement
-#define FIRE_DELAY 0 // 75 // bad coding practice, but how long to tell robot to wait before firing again
+#define FIRE_DELAY 150 // bad coding practice, but how long to tell robot to wait before firing again
 int prev_corner = 0;
-#define REPEAT_SHOT_DELAY 100
+#define REPEAT_SHOT_DELAY 250
 
 // Min and Max values to write to servo motors, may need to be tweaked individually.
 #define SERVO1_MAX 90
@@ -46,24 +52,34 @@ int debounce_timer = 0;
 #define DEBOUNCE_MIN_TIME 50
 
 // Sensor values
-#define SENSOR_STDDEVS 3 // calculate if value is greater than 3 std-devs from means.
+#define SENSOR_STDDEVS 6 // calculate if value is greater than 3 std-devs from means.
 #define CONVERSION 5/1024
-Vector<float> sensor1_running_avg;
-Vector<float> sensor2_running_avg;
-Vector<float> sensor3_running_avg;
-Vector<float> sensor4_running_avg;
-float sensor1_reading = 0;
-float sensor2_reading = 0;
-float sensor3_reading = 0;
-float sensor4_reading = 0;
-float sensor_avg[4] = {0.0, 0.0, 0.0, 0.0};
-float sensor_stddev[4] = {0.0, 0.0, 0.0, 0.0};
+// Vector<float> sensor1_running_avg;
+// Vector<float> sensor2_running_avg;
+// Vector<float> sensor3_running_avg;
+// Vector<float> sensor4_running_avg;
+
+#define STARTING_ARRAY_SIZE 100
+int starting_array_index = 0;
+double sensor1_running_avg[STARTING_ARRAY_SIZE];
+double sensor2_running_avg[STARTING_ARRAY_SIZE];
+double sensor3_running_avg[STARTING_ARRAY_SIZE];
+double sensor4_running_avg[STARTING_ARRAY_SIZE];
+
+double sensor1_reading = 0;
+double sensor2_reading = 0;
+double sensor3_reading = 0;
+double sensor4_reading = 0;
+double sensor_avg[4] = {0.0, 0.0, 0.0, 0.0};
+double sensor_stddev[4] = {0.0, 0.0, 0.0, 0.0};
 
 // Servo definitions
 Servo servo1;
 Servo servo2;
 Servo servo3;
 Servo servo4;
+
+bool safety = false;
 
 enum state{
     init_st,
@@ -108,7 +124,10 @@ void setup() {
     servo3.write(SERVO3_MIN);
     servo4.write(SERVO4_MIN);
 
-    pinMode(LASERS, OUTPUT);
+    pinMode(LASER1, OUTPUT);
+    pinMode(LASER2, OUTPUT);
+    pinMode(LASER3, OUTPUT);
+    pinMode(LASER4, OUTPUT);
     pinMode(BTN1, INPUT);
     pinMode(BTN2, INPUT);
     pinMode(BTN3, INPUT);
@@ -121,9 +140,9 @@ void setup() {
 
 // Calculate the average and std-dev of sensor readings from vector
 void calculate_sensor_stats() {
-    int N = sensor1_running_avg.size();
-    Serial.print("-----Sensor 1 avg size = ");
-    Serial.println(N);
+    // int N = sensor1_running_avg.size();
+    int N = STARTING_ARRAY_SIZE;
+    // Serial.println(N);
     // First we'll sum up all the values in the array (wishing this was pythong)
     for (int i = 0; i < N; i++) {
         sensor_avg[0] += sensor1_running_avg[i];
@@ -139,11 +158,13 @@ void calculate_sensor_stats() {
     
     // finding std-dev
     for (int i = 0; i < N; i++) {
+        // Serial.print(sensor1_running_avg[i]*1); Serial.print(" - "); Serial.println(sensor_avg[0]*1);
         sensor_stddev[0] += pow((sensor1_running_avg[i] - sensor_avg[0]), 2);
-        sensor_stddev[1] += pow((sensor2_running_avg[i] - sensor_avg[1]), 2);
-        sensor_stddev[2] += pow((sensor3_running_avg[i] - sensor_avg[2]), 2);
-        sensor_stddev[3] += pow((sensor4_running_avg[i] - sensor_avg[3]), 2);
+        sensor_stddev[1] += pow((sensor2_running_avg[i]*10 - sensor_avg[1]*10), 2);
+        sensor_stddev[2] += pow((sensor3_running_avg[i]*10 - sensor_avg[2]*10), 2);
+        sensor_stddev[3] += pow((sensor4_running_avg[i]*10 - sensor_avg[3]*10), 2);
     }
+    // Serial.print("----- sensor_std_dev[0] = "); Serial.println(sensor_stddev[0]);
     sensor_stddev[0] = sqrt(sensor_stddev[0]/(N-1));
     sensor_stddev[1] = sqrt(sensor_stddev[1]/(N-1));
     sensor_stddev[2] = sqrt(sensor_stddev[2]/(N-1));
@@ -213,11 +234,17 @@ void tick() {
     switch(current_state) {
         case init_st:
             current_state = pre_game_st;
-            pinMode(LASERS, HIGH);
+            digitalWrite(LASER1, HIGH);
+            digitalWrite(LASER2, HIGH);
+            digitalWrite(LASER3, HIGH);
+            digitalWrite(LASER4, HIGH);
         break;
 
         case pre_game_st:
-
+            if (digitalRead(BTN4) == HIGH) {
+                current_state = pre_game_debounce_st;
+                safety = true;
+            }
             if (digitalRead(BTN_START) == HIGH) {
                 current_state = pre_game_debounce_st;
             } else {
@@ -229,9 +256,12 @@ void tick() {
         case pre_game_debounce_st:
             if(digitalRead(BTN_START) == HIGH) {
                 if (debounce_timer >= DEBOUNCE_MIN_TIME) {
-                    pinMode(LASERS, LOW);
+                    digitalWrite(LASER1, LOW);
+                    digitalWrite(LASER2, LOW);
+                    digitalWrite(LASER3, LOW);
+                    digitalWrite(LASER4, LOW);
                     current_state = wait_st;
-                    calculate_sensor_stats();
+                    // calculate_sensor_stats();
                     debounce_timer = 0;
                 }
             } else {
@@ -250,7 +280,8 @@ void tick() {
             // Serial.print(sensor4_reading);
             // Serial.println(" "); // Averages v");
 
-        
+            // Serial.println(sensor_stddev[0]);
+            // Serial.print(" ");
             // Serial.print(sensor_avg[0]+sensor_stddev[0]*SENSOR_STDDEVS);
             // Serial.print(" ");
             // Serial.print(sensor_avg[1]+sensor_stddev[1]*SENSOR_STDDEVS);
@@ -287,31 +318,33 @@ void tick() {
             //     current_state = c4_st;
             
             // Hard coded values
-            if (sensor1_reading >= (1.5)) {
-                if (prev_corner == 1) {
-                    delay(REPEAT_SHOT_DELAY);
-                }
-                prev_corner = 1;
-                current_state = c1_st;
-            } else if (sensor2_reading >= (1.5)) {
-                if (prev_corner == 2) {
-                    delay(REPEAT_SHOT_DELAY);
-                }
-                prev_corner = 2;
-                current_state = c2_st;
-            } else if (sensor3_reading >= (1.5)) {
-                if (prev_corner == 3) {
-                    delay(REPEAT_SHOT_DELAY);
-                }
-                prev_corner = 3;
-                current_state = c3_st;
-            } else if (sensor4_reading >= (1.5)) {
-                if (prev_corner == 4) {
-                    delay(REPEAT_SHOT_DELAY);
-                }
-                prev_corner = 4;
-                current_state = c4_st;
-
+            if (safety == false) {
+                if (sensor1_reading >= (OP_AMP_THRESHOLD)) {
+                    if (prev_corner == 1) {
+                        delay(REPEAT_SHOT_DELAY);
+                    }
+                    prev_corner = 1;
+                    current_state = c1_st;
+                } else if (sensor2_reading >= (OP_AMP_THRESHOLD)) {
+                    if (prev_corner == 2) {
+                        delay(REPEAT_SHOT_DELAY);
+                    }
+                    prev_corner = 2;
+                    current_state = c2_st;
+                } else if (sensor3_reading >= (OP_AMP_THRESHOLD)) {
+                    if (prev_corner == 3) {
+                        delay(REPEAT_SHOT_DELAY);
+                    }
+                    prev_corner = 3;
+                    current_state = c3_st;
+                } else if (sensor4_reading >= (OP_AMP_THRESHOLD)) {
+                    if (prev_corner == 4) {
+                        delay(REPEAT_SHOT_DELAY);
+                    }
+                    prev_corner = 4;
+                    current_state = c4_st;
+            }
+            // leave below alone
             } else if (digitalRead(BTN_START) == HIGH && digitalRead(BTN4) == HIGH) {
                 current_state = cancel_debounce_st;
             } else if (digitalRead(BTN1) == HIGH) {
@@ -407,10 +440,11 @@ void tick() {
                 if (debounce_timer >= DEBOUNCE_MIN_TIME) {
                     current_state = pre_game_st;
                     debounce_timer = 0;
-                    sensor1_running_avg.clear();
-                    sensor2_running_avg.clear();
-                    sensor3_running_avg.clear();
-                    sensor4_running_avg.clear();
+                    starting_array_index = 0;
+                    // sensor1_running_avg.clear();
+                    // sensor2_running_avg.clear();
+                    // sensor3_running_avg.clear();
+                    // sensor4_running_avg.clear();
                 }
             } else {
                 current_state = exit_st;
@@ -427,10 +461,18 @@ void tick() {
 
         case pre_game_st:
             // create running average of sensor readings
-            sensor1_running_avg.push_back(sensor1_reading);
-            sensor2_running_avg.push_back(sensor2_reading);
-            sensor3_running_avg.push_back(sensor3_reading);
-            sensor4_running_avg.push_back(sensor4_reading);
+            // sensor1_running_avg.push_back(sensor1_reading);
+            // sensor2_running_avg.push_back(sensor2_reading);
+            // sensor3_running_avg.push_back(sensor3_reading);
+            // sensor4_running_avg.push_back(sensor4_reading);
+            if (starting_array_index < STARTING_ARRAY_SIZE) {
+                sensor1_running_avg[starting_array_index] = sensor1_reading;
+                sensor2_running_avg[starting_array_index] = sensor2_reading;
+                sensor3_running_avg[starting_array_index] = sensor3_reading;
+                sensor4_running_avg[starting_array_index] = sensor4_reading;
+            }
+            starting_array_index++;
+
         break;
     
         case pre_game_debounce_st:
