@@ -32,10 +32,10 @@ State machine for controlling arduino MEGA 2560 for ECEN BYU Robotics Competitio
 #define BTN_START 38
 
 // Value definitions
-#define SERVO_DELAY 200 // 250 // how long to make movement
-#define FIRE_DELAY 50 // 150 // bad coding practice, but how long to tell robot to wait before firing again
+#define SERVO_DELAY 200 // how long to make movement
+#define FIRE_DELAY 0 // 150 // bad coding practice, but how long to tell robot to wait before firing again
 int prev_corner = 0;
-#define REPEAT_SHOT_DELAY 100 // 250
+#define REPEAT_SHOT_DELAY 100
 
 // Min and Max values to write to servo motors, may need to be tweaked individually.
 #define SERVO1_MAX 90
