@@ -32,10 +32,10 @@ State machine for controlling arduino MEGA 2560 for ECEN BYU Robotics Competitio
 #define BTN_START 38
 
 // Value definitions
-#define SERVO_DELAY 250 // how long to make movement
-#define FIRE_DELAY 150 // bad coding practice, but how long to tell robot to wait before firing again
+#define SERVO_DELAY 200 // 250 // how long to make movement
+#define FIRE_DELAY 50 // 150 // bad coding practice, but how long to tell robot to wait before firing again
 int prev_corner = 0;
-#define REPEAT_SHOT_DELAY 250
+#define REPEAT_SHOT_DELAY 100 // 250
 
 // Min and Max values to write to servo motors, may need to be tweaked individually.
 #define SERVO1_MAX 90
@@ -85,6 +85,7 @@ enum state{
     init_st,
     pre_game_st,
     pre_game_debounce_st,
+    pre_game_safety_st,
     wait_st,
     c1_st,
     c1_debounce_st,
@@ -241,8 +242,8 @@ void tick() {
         break;
 
         case pre_game_st:
-            if ((digitalRead(BTN4) == HIGH) and digitalRead(BTN_START) == HIGH) {
-                current_state = pre_game_debounce_st;
+            if (digitalRead(BTN4) == HIGH) {
+                current_state = pre_game_safety_st;
                 safety = true;
             }
             if (digitalRead(BTN_START) == HIGH) {
@@ -263,6 +264,24 @@ void tick() {
                     current_state = wait_st;
                     // calculate_sensor_stats();
                     debounce_timer = 0;
+                }
+            } else {
+                current_state = pre_game_st;
+                debounce_timer = 0;
+            }
+        break;
+
+        case pre_game_safety_st:
+            if(digitalRead(BTN4) == HIGH) {
+                if (debounce_timer >= DEBOUNCE_MIN_TIME) {
+                    digitalWrite(LASER1, LOW);
+                    digitalWrite(LASER2, LOW);
+                    digitalWrite(LASER3, LOW);
+                    digitalWrite(LASER4, LOW);
+                    current_state = wait_st;
+                    // calculate_sensor_stats();
+                    debounce_timer = 0;
+                    delay(1000);
                 }
             } else {
                 current_state = pre_game_st;
@@ -477,6 +496,10 @@ void tick() {
         break;
     
         case pre_game_debounce_st:
+            debounce_timer++;
+        break;
+
+        case pre_game_safety_st:
             debounce_timer++;
         break;
         
